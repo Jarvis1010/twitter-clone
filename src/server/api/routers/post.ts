@@ -1,6 +1,6 @@
-import { z } from "zod";
-
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+
+import { z } from "zod";
 
 export const postRouter = createTRPCRouter({
   hello: publicProcedure
@@ -19,10 +19,15 @@ export const postRouter = createTRPCRouter({
 
       return ctx.db.post.create({
         data: {
-          name: input.name,
+          authorId: input.name,
+          content: "", // Add the 'content' property with an empty string value
         },
       });
     }),
+
+  getAll: publicProcedure.query(({ ctx }) => {
+    return ctx.db.post.findMany();
+  }),
 
   getLatest: publicProcedure.query(({ ctx }) => {
     return ctx.db.post.findFirst({

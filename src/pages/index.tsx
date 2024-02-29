@@ -6,8 +6,9 @@ import { api } from "~/utils/api";
 import { use } from "react";
 
 export default function Home() {
-  const hello = api.post.hello.useQuery({ text: "from tRPC" });
   const user = useUser();
+
+  const { data } = api.post.getAll.useQuery();
 
   return (
     <>
@@ -21,9 +22,9 @@ export default function Home() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8">
             <UserButton />
           </div>
-          <p className="text-2xl text-white">
-            {hello.data ? hello.data.greeting : "Loading tRPC query..."}
-          </p>
+        </div>
+        <div>
+          {data?.map((post) => <div key={post.id}>{post.content}</div>)}
         </div>
       </main>
     </>
