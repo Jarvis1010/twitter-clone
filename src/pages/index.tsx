@@ -5,8 +5,9 @@ import Head from "next/head";
 import Image from "next/image";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { Loading } from "~/components/loading";
+import { Loading, LoadingSpinner } from "~/components/loading";
 import { useRef } from "react";
+import toast from "react-hot-toast";
 dayjs.extend(relativeTime);
 
 type PostWithUser = RouterOutputs["post"]["getAll"][number];
@@ -43,9 +44,15 @@ function CreatePostWizard() {
       formRef.current?.reset();
       void utils.invalidate();
     },
+    onError: (error) => {
+      const errorMessage = error.data?.zodError?.fieldErrors?.content;
+      toast.error(errorMessage?.[0] ?? "Failed to create post");
+    },
   });
 
   if (!user) return null;
+
+  const postingState = isLoading ? "loading" : "idle";
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -71,13 +78,19 @@ function CreatePostWizard() {
         className="grow bg-transparent outline-none"
         disabled={isLoading}
       />
-      <button
-        type="submit"
-        className="rounded-md bg-blue-500 px-4 py-2 text-white"
-        disabled={isLoading}
-      >
-        Post
-      </button>
+      {postingState === "idle" ? (
+        <button
+          type="submit"
+          className="rounded-md bg-blue-500 px-4 py-2 text-white"
+          disabled={isLoading}
+        >
+          Post
+        </button>
+      ) : (
+        <div className="flex items-center justify-center">
+          <LoadingSpinner size={20} />
+        </div>
+      )}
     </form>
   );
 }
