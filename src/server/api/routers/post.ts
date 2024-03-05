@@ -1,6 +1,16 @@
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 
+import type { User } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs";
 import { z } from "zod";
+
+function filterUserForClient({ id, username, imageUrl }: User) {
+  return {
+    id,
+    username,
+    imageUrl,
+  };
+}
 
 export const postRouter = createTRPCRouter({
   hello: publicProcedure
@@ -25,8 +35,26 @@ export const postRouter = createTRPCRouter({
       });
     }),
 
-  getAll: publicProcedure.query(({ ctx }) => {
-    return ctx.db.post.findMany();
+  getAll: publicProcedure.query(async ({ ctx }) => {
+    const posts = await ctx.db.post.findMany({ take: 100 });
+
+    const users = (
+      await clerkClient.users.getUserList({
+        limit: 100,
+        userId: posts.map((post) => post.authorId),
+      })
+    ).map(filterUserForClient);
+
+    return posts.map((post) => {
+      const author = users.find((user) => user.id === post.authorId)!;
+      return {
+        post,
+        author: {
+          ...author,
+          username: author.username!,
+        },
+      };
+    });
   }),
 
   getLatest: publicProcedure.query(({ ctx }) => {
