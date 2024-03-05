@@ -16,7 +16,7 @@ export function PostView({ post, author }: PostWithUser) {
         width={56}
         height={56}
         src={author.imageUrl}
-        alt={author.username}
+        alt={author.username ?? ""}
       />
 
       <div className="flex flex-col">

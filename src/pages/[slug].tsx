@@ -88,8 +88,8 @@ export default function ProfilePage({ username }: PageProps) {
       <Layout>
         <div className="relative h-36 bg-slate-600">
           <Image
-            src={data?.imageUrl}
-            alt={data?.username}
+            src={data?.imageUrl ?? ""}
+            alt={data?.username ?? ""}
             width={128}
             height={128}
             className="absolute bottom-0 left-0 -mb-[64px] ml-4 rounded-full border-4 border-black"
