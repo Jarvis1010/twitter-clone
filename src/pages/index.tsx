@@ -6,6 +6,7 @@ import Image from "next/image";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { Loading } from "~/components/loading";
+import { useRef } from "react";
 dayjs.extend(relativeTime);
 
 type PostWithUser = RouterOutputs["post"]["getAll"][number];
@@ -34,11 +35,29 @@ function PostView({ post, author }: PostWithUser) {
 
 function CreatePostWizard() {
   const { user } = useUser();
-  console.log(user);
+  const formRef = useRef<HTMLFormElement>(null);
+  const utils = api.useUtils();
+
+  const { mutate, isLoading } = api.post.create.useMutation({
+    onSuccess: async () => {
+      formRef.current?.reset();
+      void utils.invalidate();
+    },
+  });
+
   if (!user) return null;
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const content = formData.get("content") as string;
+    if (!content) return;
+
+    mutate({ content });
+  };
+
   return (
-    <div className="flex w-full gap-3">
+    <form ref={formRef} className="flex w-full gap-3" onSubmit={handleSubmit}>
       <Image
         className="h-14 w-14 rounded-full"
         width={56}
@@ -47,10 +66,19 @@ function CreatePostWizard() {
         alt={user.username ?? ""}
       />
       <input
+        name="content"
         placeholder="What's on your mind?"
         className="grow bg-transparent outline-none"
+        disabled={isLoading}
       />
-    </div>
+      <button
+        type="submit"
+        className="rounded-md bg-blue-500 px-4 py-2 text-white"
+        disabled={isLoading}
+      >
+        Post
+      </button>
+    </form>
   );
 }
 
@@ -64,7 +92,7 @@ function Feed() {
 
   return (
     <div className="flex flex-col">
-      {[...data, ...data].map((fullPost) => (
+      {data.map((fullPost) => (
         <PostView {...fullPost} key={fullPost.post.id} />
       ))}
     </div>
