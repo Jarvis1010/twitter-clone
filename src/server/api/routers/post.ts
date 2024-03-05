@@ -4,6 +4,7 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 
+import type { Post } from "@prisma/client";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { TRPCError } from "@trpc/server";
@@ -17,6 +18,33 @@ const ratelimit = new Ratelimit({
   analytics: true,
 });
 
+async function addUserDataToPost(posts: Post[]) {
+  const users = (
+    await clerkClient.users.getUserList({
+      limit: 100,
+      userId: posts.map((post) => post.authorId),
+    })
+  ).map(filterUserForClient);
+
+  return posts.map((post) => {
+    const author = users.find((user) => user.id === post.authorId)!;
+
+    if (!author)
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Author for post not found.",
+      });
+
+    return {
+      post,
+      author: {
+        ...author,
+        username: author.username,
+      },
+    };
+  });
+}
+
 export const postRouter = createTRPCRouter({
   getAll: publicProcedure.query(async ({ ctx }) => {
     const posts = await ctx.db.post.findMany({
@@ -24,30 +52,25 @@ export const postRouter = createTRPCRouter({
       orderBy: { createdAt: "desc" },
     });
 
-    const users = (
-      await clerkClient.users.getUserList({
-        limit: 100,
-        userId: posts.map((post) => post.authorId),
-      })
-    ).map(filterUserForClient);
+    return addUserDataToPost(posts);
+  }),
 
-    return posts.map((post) => {
-      const author = users.find((user) => user.id === post.authorId)!;
-      return {
-        post,
-        author: {
-          ...author,
-          username: author.username!,
+  getPostByUserId: publicProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const posts = await ctx.db.post.findMany({
+        where: {
+          authorId: input.userId,
         },
-      };
-    });
-  }),
+        orderBy: { createdAt: "desc" },
+      });
 
-  getLatest: publicProcedure.query(({ ctx }) => {
-    return ctx.db.post.findFirst({
-      orderBy: { createdAt: "desc" },
-    });
-  }),
+      return addUserDataToPost(posts);
+    }),
 
   create: privateProcedure
     .input(

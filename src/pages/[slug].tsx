@@ -3,6 +3,7 @@ import Head from "next/head";
 import Image from "next/image";
 import { Layout } from "~/components/Layout";
 import { Loading } from "~/components/loading";
+import { PostView } from "~/components/PostView";
 import { api } from "~/utils/api";
 import { appRouter } from "~/server/api/root";
 import { createServerSideHelpers } from "@trpc/react-query/server";
@@ -43,6 +44,27 @@ export const getStaticProps: GetStaticProps = async (context) => {
   };
 };
 
+function ProfileFeed({ userId }: { userId: string }) {
+  const { data, isLoading } = api.post.getPostByUserId.useQuery({
+    userId,
+  });
+
+  if (isLoading) return <Loading />;
+  if (!data) return null;
+
+  if (data.length === 0) {
+    return <div>No posts yet</div>;
+  }
+
+  return (
+    <div>
+      {data?.map(({ post, author }) => (
+        <PostView post={post} author={author} key={post.id} />
+      ))}
+    </div>
+  );
+}
+
 type PageProps = {
   username: string;
 };
@@ -76,6 +98,7 @@ export default function ProfilePage({ username }: PageProps) {
         <div className="h-[64px]" />
         <div className="p-4 text-2xl font-bold">@{data?.username}</div>
         <div className="w-full border-b border-slate-400" />
+        <ProfileFeed userId={data?.id ?? ""} />
       </Layout>
     </>
   );
