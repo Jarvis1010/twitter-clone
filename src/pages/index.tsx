@@ -3,6 +3,7 @@ import { SignInButton, useUser } from "@clerk/nextjs";
 
 import Head from "next/head";
 import Image from "next/image";
+import Link from "next/link";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { Loading, LoadingSpinner } from "~/components/loading";
@@ -24,9 +25,13 @@ function PostView({ post, author }: PostWithUser) {
       />
       <div className="flex flex-col">
         <div className="flex gap-1 text-slate-300">
-          <span>@{author.username}</span>
+          <Link href={`/@${author.username}`}>
+            <span>@{author.username}</span>
+          </Link>
           <span>·</span>
-          <span className="font-thin">{dayjs(post.createdAt).fromNow()}</span>
+          <Link href={`/post/${post.id}`}>
+            <span className="font-thin">{dayjs(post.createdAt).fromNow()}</span>
+          </Link>
         </div>
         <span className="text-2xl">{post.content}</span>
       </div>
