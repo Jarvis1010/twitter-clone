@@ -5,10 +5,7 @@ import { Layout } from "~/components/Layout";
 import { Loading } from "~/components/loading";
 import { PostView } from "~/components/PostView";
 import { api } from "~/utils/api";
-import { appRouter } from "~/server/api/root";
-import { createServerSideHelpers } from "@trpc/react-query/server";
-import { db } from "~/server/db";
-import superjson from "superjson";
+import { generateSSGHelper } from "~/server/helpers/ssgHelper";
 
 export const getStaticPaths = async () => {
   return {
@@ -18,12 +15,6 @@ export const getStaticPaths = async () => {
 };
 
 export const getStaticProps: GetStaticProps = async (context) => {
-  const helpers = createServerSideHelpers({
-    router: appRouter,
-    ctx: { db, currentUserId: null },
-    transformer: superjson, // optional - adds superjson serialization
-  });
-
   const slug = context.params?.slug as string;
 
   if (typeof slug !== "string") {
@@ -32,13 +23,15 @@ export const getStaticProps: GetStaticProps = async (context) => {
 
   const username = slug.replace(/@/, "");
 
-  await helpers.profile.getUserByUsername.prefetch({
+  const helper = generateSSGHelper();
+
+  await helper.profile.getUserByUsername.prefetch({
     username,
   });
 
   return {
     props: {
-      trpcState: helpers.dehydrate(),
+      trpcState: helper.dehydrate(),
       username,
     },
   };
